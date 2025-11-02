@@ -1,1 +1,4 @@
-export * from './lib/shared-type';
+export interface MessageResponse {
+    message: string;
+  }
+  

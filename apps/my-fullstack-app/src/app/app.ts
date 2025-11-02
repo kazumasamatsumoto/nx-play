@@ -1,13 +1,24 @@
-import { Component } from '@angular/core';
-import { RouterModule } from '@angular/router';
-import { NxWelcome } from './nx-welcome';
+import { Component, OnInit } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { MessageResponse } from '@my-fullstack-app/shared-type';
+import { CommonModule } from '@angular/common';
 
 @Component({
-  imports: [NxWelcome, RouterModule],
   selector: 'app-root',
+  standalone: true,
   templateUrl: './app.html',
-  styleUrl: './app.scss',
+  styleUrls: ['./app.scss'],
+  imports: [CommonModule],
 })
-export class App {
-  protected title = 'my-fullstack-app';
+export class AppComponent implements OnInit {
+  message = '';
+
+  constructor(private http: HttpClient) {}
+
+  ngOnInit() {
+    this.http.get<MessageResponse>('http://localhost:3000/api').subscribe({
+      next: (res) => (this.message = res.message),
+      error: (err) => console.error(err),
+    });
+  }
 }
