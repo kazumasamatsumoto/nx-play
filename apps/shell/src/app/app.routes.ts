@@ -1,5 +1,5 @@
-import { NxWelcome } from './nx-welcome';
 import { Route } from '@angular/router';
+import { HomeComponent } from './home.component';
 
 export const appRoutes: Route[] = [
   {
@@ -12,6 +12,6 @@ export const appRoutes: Route[] = [
   },
   {
     path: '',
-    component: NxWelcome,
+    component: HomeComponent,
   },
 ];

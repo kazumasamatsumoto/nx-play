@@ -1,6 +1,20 @@
-<ul class="remote-menu">
-  <li><a routerLink="/">Home</a></li>
-  <li><a routerLink="user">User</a></li>
-  <li><a routerLink="product">Product</a></li>
-</ul>
-<router-outlet></router-outlet>
+<div class="app-container">
+  <header class="header">
+    <h1 class="app-title">🚀 Micro Frontend App</h1>
+    <nav class="nav-buttons">
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-btn">
+        🏠 Home
+      </a>
+      <a routerLink="user" routerLinkActive="active" class="nav-btn">
+        👤 User
+      </a>
+      <a routerLink="product" routerLinkActive="active" class="nav-btn">
+        📦 Product
+      </a>
+    </nav>
+  </header>
+  
+  <main class="content">
+    <router-outlet></router-outlet>
+  </main>
+</div>
