@@ -14,7 +14,7 @@ my-fullstack-app/
 
 ## ✅ ここまでの流れ（README追記用まとめ）
 
-以下を `README.md` に書いておくと、再現性の高いプロジェクト構成手順になります👇
+以下を `README.md` に追記すれば、誰でも同じ構成を再現できます👇
 
 ---
 
@@ -48,7 +48,11 @@ export interface MessageResponse {
 }
 ```
 
-#### 5️⃣ API側で使用
+---
+
+## 🔧 API 側設定（NestJS）
+
+### 5️⃣ 型の使用
 
 `apps/api/src/app/app.service.ts`
 
@@ -64,7 +68,43 @@ export class AppService {
 }
 ```
 
-#### 6️⃣ フロント側で使用
+### 6️⃣ CORS 設定を有効化
+
+`apps/api/src/main.ts`
+
+```ts
+import { Logger } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app/app.module';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+
+  // 👇 Angularからの通信を許可（CORS設定）
+  app.enableCors({
+    origin: 'http://localhost:4200',
+    credentials: true,
+  });
+
+  const globalPrefix = 'api';
+  app.setGlobalPrefix(globalPrefix);
+
+  const port = process.env.PORT || 3000;
+  await app.listen(port);
+
+  Logger.log(
+    `🚀 Application is running on: http://localhost:${port}/${globalPrefix}`
+  );
+}
+
+bootstrap();
+```
+
+---
+
+## 💻 フロントエンド側設定（Angular）
+
+### 7️⃣ API呼び出しと型の利用
 
 `apps/my-fullstack-app/src/app/app.ts`
 
@@ -94,9 +134,35 @@ export class AppComponent implements OnInit {
 }
 ```
 
+### 8️⃣ テンプレート修正
+
+`apps/my-fullstack-app/src/app/app.html`
+
+```html
+<h1>{{ message }}</h1>
+```
+
+（初期の `<app-nx-welcome>` を削除して置き換える）
+
 ---
 
-### ✅ 確認コマンド
+## 🚀 動作確認コマンド
+
+```bash
+# NestJS起動
+npx nx serve api
+
+# Angular起動
+npx nx serve my-fullstack-app
+```
+
+ブラウザで
+👉 [http://localhost:4200](http://localhost:4200)
+を開くと、APIから返されたメッセージが `<h1>` に表示されればOK！
+
+---
+
+## 🧩 プロジェクト一覧の確認
 
 ```bash
 npx nx show projects
@@ -114,6 +180,28 @@ shared-type
 
 ---
 
-この状態が **Nx公式ドキュメントでも推奨されている構成**（apps = アプリ層 / libs = 共有ロジック）です 💪
-これでフロント・バック・共通型の3点が完全に連携できる環境になりました！
+## 🕸 依存関係グラフの可視化（Dependency Graph）
+
+```bash
+npx nx graph
+```
+
+これでブラウザが自動で開き、
+`apps/my-fullstack-app → libs/shared-type → apps/api`
+という依存関係がグラフィカルに確認できます 🎨
+
+> 💡 手動で開く場合は：
+>
+> ```bash
+> npx nx graph --open=false
+> ```
+>
+> として、出力されたURLをブラウザに貼り付け。
+
+---
+
+## ✅ まとめ
+
+これで Nx を使った **Angular × NestJS × Shared Library** の構成が完成です 🎯
+CORS 対応済みなので、フロントから API を安全に呼び出せます。
 
