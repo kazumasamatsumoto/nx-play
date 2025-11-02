@@ -1,113 +1,84 @@
-## 🧱 Nx フルスタックプロジェクト構築手順（Angular + Nest.js + Shared Types）
-
-### 1. Nx ワークスペース作成（Angularアプリ）
-
-```bash
-npx create-nx-workspace@latest my-fullstack-app
-```
-
-質問例：
+## 📁 現在の理想フォルダ構成
 
 ```
-✔ Which stack do you want to use? · angular
-✔ Integrated monorepo, or standalone project? · integrated
-✔ Application name · my-fullstack-app
-✔ Which bundler would you like to use? · esbuild
-✔ Default stylesheet format · scss
-✔ Do you want to enable Server-Side Rendering (SSR)? · No
-✔ Which unit test runner? · jest
-✔ Test runner for e2e tests? · playwright
-✔ Which CI provider? · Do it later
+my-fullstack-app/
+├── apps/
+│   ├── my-fullstack-app/     ← Angularフロントエンド
+│   └── api/                  ← NestJSバックエンド
+├── libs/
+│   └── shared-type/          ← 共通の型定義（インターフェースなど）
+└── nx.json, package.json ...
 ```
 
 ---
 
-### 2. Nest.js バックエンド追加
+## ✅ ここまでの流れ（README追記用まとめ）
 
-```bash
-npm install -D @nx/nest
-npx nx g @nx/nest:application my-nest-app
-```
-
-質問例：
-
-```
-✔ Which linter? · eslint
-✔ Which unit test runner? · jest
-✔ Where should the project be generated? · apps
-```
-
-生成後、以下のような構成になります：
-
-```
-apps/
-├─ my-fullstack-app/   ← Angularフロント
-└─ my-nest-app/        ← Nest.jsバック
-```
+以下を `README.md` に書いておくと、再現性の高いプロジェクト構成手順になります👇
 
 ---
 
-### 3. 共通型定義ライブラリ追加（libs/shared-types）
+### 📘 Nx Monorepo 環境セットアップ手順
+
+#### 1️⃣ Nxワークスペース作成（Angularを含む）
 
 ```bash
-npx nx g @nx/js:lib shared-types --directory=libs
+npx create-nx-workspace@latest my-fullstack-app --preset=angular
 ```
 
-質問例：
+#### 2️⃣ NestJSバックエンド追加
 
-```
-✔ Which bundler? · none
-✔ Which linter? · eslint
-✔ Which unit test runner? · none
+```bash
+npx nx g @nx/nest:application apps/api
 ```
 
----
+#### 3️⃣ 共通型ライブラリの追加
 
-### 4. 型定義を追加
+```bash
+npx nx g @nx/js:library libs/shared-type --importPath=@my-fullstack-app/shared-type
+```
 
-📄 `libs/shared-types/src/index.ts`
+#### 4️⃣ 共通型の定義
 
-```typescript
+`libs/shared-type/src/index.ts`
+
+```ts
 export interface MessageResponse {
   message: string;
 }
 ```
 
----
+#### 5️⃣ API側で使用
 
-### 5. Nest.js 側で利用
+`apps/api/src/app/app.service.ts`
 
-📄 `apps/my-nest-app/src/app/app.service.ts`
-
-```typescript
+```ts
 import { Injectable } from '@nestjs/common';
-import { MessageResponse } from '@my-fullstack-app/shared-types';
+import { MessageResponse } from '@my-fullstack-app/shared-type';
 
 @Injectable()
 export class AppService {
   getData(): MessageResponse {
-    return { message: 'Hello API (shared-types ✅)' };
+    return { message: 'Hello from API ✅' };
   }
 }
 ```
 
----
+#### 6️⃣ フロント側で使用
 
-### 6. Angular 側で利用
+`apps/my-fullstack-app/src/app/app.ts`
 
-📄 `apps/my-fullstack-app/src/app/app.ts`
-
-```typescript
+```ts
 import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { CommonModule } from '@angular/common';
-import { MessageResponse } from '@my-fullstack-app/shared-types';
+import { MessageResponse } from '@my-fullstack-app/shared-type';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule],
   templateUrl: './app.html',
+  styleUrls: ['./app.scss'],
+  imports: [],
 })
 export class AppComponent implements OnInit {
   message = '';
@@ -117,6 +88,7 @@ export class AppComponent implements OnInit {
   ngOnInit() {
     this.http.get<MessageResponse>('http://localhost:3000/api').subscribe({
       next: (res) => (this.message = res.message),
+      error: (err) => console.error(err),
     });
   }
 }
@@ -124,31 +96,24 @@ export class AppComponent implements OnInit {
 
 ---
 
-### 7. 動作確認
+### ✅ 確認コマンド
 
 ```bash
-nx serve my-nest-app   # バックエンド起動（http://localhost:3000/api）
-nx serve my-fullstack-app  # フロント起動（http://localhost:4200）
+npx nx show projects
 ```
 
-結果：
+出力例：
 
 ```
-{"message":"Hello API (shared-types ✅)"}
+my-fullstack-app
+my-fullstack-app-e2e
+api
+api-e2e
+shared-type
 ```
-
-ブラウザで同メッセージが表示されれば成功 🎉
 
 ---
 
-### ✅ フォルダ構成（最終形）
-
-```
-my-fullstack-app/
-├─ apps/
-│  ├─ my-fullstack-app/   ← Angularフロント
-│  └─ my-nest-app/        ← Nest.jsバック
-└─ libs/
-   └─ shared-types/        ← 共通型ライブラリ
-```
+この状態が **Nx公式ドキュメントでも推奨されている構成**（apps = アプリ層 / libs = 共有ロジック）です 💪
+これでフロント・バック・共通型の3点が完全に連携できる環境になりました！
 

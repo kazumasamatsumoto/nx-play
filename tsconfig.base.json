@@ -15,8 +15,7 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@my-fullstack-app/shared-types": ["shared-types/src/index.ts"],
-      "@my-fullstack-app/libs": ["libs/src/index.ts"]
+      "@my-fullstack-app/shared-type": ["libs/shared-type/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]
