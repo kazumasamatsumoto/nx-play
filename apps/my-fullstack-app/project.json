@@ -58,7 +58,11 @@
           "buildTarget": "my-fullstack-app:build:development"
         }
       },
-      "defaultConfiguration": "development"
+      "defaultConfiguration": "development",
+      "dependsOn": ["my-nest-app:serve"],
+      "options": {
+        "proxyConfig": "apps/my-fullstack-app/proxy.conf.json"
+      }
     },
     "extract-i18n": {
       "executor": "@angular/build:extract-i18n",
