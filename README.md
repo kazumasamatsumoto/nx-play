@@ -3,13 +3,16 @@
 
 ---
 
-## 📁 現在の理想フォルダ構成
+## 📁 現在のフォルダ構成
 
 ```
 my-fullstack-app/
 ├── apps/
-│   ├── my-fullstack-app/     ← Angularフロントエンド
-│   └── api/                  ← NestJSバックエンド
+│   ├── my-fullstack-app/     ← Angularフロントエンド（従来型）
+│   ├── api/                  ← NestJSバックエンド
+│   ├── shell/                ← マイクロフロントエンド（ホスト）
+│   ├── user/                 ← マイクロフロントエンド（リモート：ユーザー機能）
+│   └── product/              ← マイクロフロントエンド（リモート：製品機能）
 ├── libs/
 │   └── shared-type/          ← 共通の型定義（インターフェースなど）
 └── nx.json, package.json ...
@@ -245,3 +248,278 @@ npx nx test shared-type --watch
 * Jestテスト実行
 
 まで網羅されています 💪🔥
+
+---
+
+## 🎯 マイクロフロントエンド構築手順
+
+### Module Federationを使用したマイクロフロントエンドアーキテクチャの導入
+
+Nx Angularの Module Federation 機能を使用して、shell（ホスト）、user、product（リモート）の3つのマイクロフロントエンドアプリケーションを構築しました。
+
+### 9️⃣ マイクロフロントエンドアプリの作成
+
+**実行したコマンド：**
+
+Nx ジェネレーターUIを使用して、以下のオプションでホストアプリを作成：
+
+```bash
+# Nx ジェネレーターUIから実行
+# @nx/angular:host ジェネレーターを使用
+```
+
+**設定内容：**
+- **generatorName**: `@nx/angular:host`
+- **name**: `shell`
+- **directory**: `apps/shell`
+- **style**: `scss`
+- **remotes**: `["user", "product"]`
+- **standalone**: `true`
+- **unitTestRunner**: `jest`
+- **e2eTestRunner**: `playwright`
+- **linter**: `eslint`
+- **strict**: `true`
+
+**重要：** `remotes` オプションに `["user", "product"]` を指定することで、Nxが自動的に以下をすべて作成してくれます：
+
+1. ✅ **shell** アプリ（ホスト）- `apps/shell/`
+2. ✅ **user** アプリ（リモート）- `apps/user/`
+3. ✅ **product** アプリ（リモート）- `apps/product/`
+4. ✅ 各アプリのe2eテストプロジェクト
+5. ✅ Module Federation設定ファイル（`module-federation.config.ts`）
+6. ✅ Webpack設定ファイル
+7. ✅ ルーティング設定
+
+### 📝 自動生成された設定
+
+#### Module Federation設定
+
+**apps/shell/module-federation.config.ts**
+```typescript
+import { ModuleFederationConfig } from '@nx/module-federation';
+
+const config: ModuleFederationConfig = {
+  name: 'shell',
+  remotes: ['user', 'product'],
+};
+
+export default config;
+```
+
+**apps/user/module-federation.config.ts**
+```typescript
+import { ModuleFederationConfig } from '@nx/module-federation';
+
+const config: ModuleFederationConfig = {
+  name: 'user',
+  exposes: {
+    './Routes': 'apps/user/src/app/remote-entry/entry.routes.ts',
+  },
+};
+
+export default config;
+```
+
+**apps/product/module-federation.config.ts**
+```typescript
+import { ModuleFederationConfig } from '@nx/module-federation';
+
+const config: ModuleFederationConfig = {
+  name: 'product',
+  exposes: {
+    './Routes': 'apps/product/src/app/remote-entry/entry.routes.ts',
+  },
+};
+
+export default config;
+```
+
+#### ルーティング設定
+
+**apps/shell/src/app/app.routes.ts**
+```typescript
+import { Route } from '@angular/router';
+
+export const appRoutes: Route[] = [
+  {
+    path: 'product',
+    loadChildren: () => import('product/Routes').then((m) => m!.remoteRoutes),
+  },
+  {
+    path: 'user',
+    loadChildren: () => import('user/Routes').then((m) => m!.remoteRoutes),
+  },
+  {
+    path: '',
+    component: NxWelcome,
+  },
+];
+```
+
+### 🚀 マイクロフロントエンドアプリの起動方法
+
+#### 統合起動（推奨）
+
+```bash
+# shellアプリを起動すると、userとproductも自動的に起動します
+npx nx serve shell
+```
+
+- **shell**: http://localhost:4200
+- **user**: http://localhost:4201 （自動起動）
+- **product**: http://localhost:4202 （自動起動）
+
+**重要**: `apps/shell/project.json`に`devRemotes`設定を追加しているため、shellを起動するだけで全リモートが自動起動します。
+
+#### 個別起動（開発時に特定のリモートのみ起動したい場合）
+
+**方法1: コマンドラインでdevRemotesを指定**
+```bash
+# 特定のリモートのみ開発モードで起動
+npx nx serve shell --devRemotes=user
+
+# 複数のリモートを指定（推奨）
+npx nx serve shell --devRemotes=user,product
+
+# devRemotesなしで起動（リモートは静的ビルドされたものを使用）
+npx nx serve shell --devRemotes=
+```
+
+**注意**: `--devRemotes`で指定しないリモートは、事前にビルドされた静的ファイルとして提供されます（HMRなし）。
+
+**方法2: 別々のターミナルで起動**
+```bash
+# ターミナル1: userアプリを起動
+npx nx serve user    # ポート 4201
+
+# ターミナル2: productアプリを起動
+npx nx serve product # ポート 4202
+
+# ターミナル3: shellアプリを起動
+npx nx serve shell   # ポート 4200
+```
+
+### 🌐 アクセスURL
+
+- ホーム: http://localhost:4200/
+- ユーザー機能: http://localhost:4200/user
+- 製品機能: http://localhost:4200/product
+
+### 🐛 トラブルシューティング
+
+#### エラー: `remoteEntry.mjs:1 Failed to load resource: the server responded with a status of 404 (Not Found)`
+
+**原因**: リモートアプリケーション（userまたはproduct）が起動していないか、正しく接続できていません。
+
+**解決方法**:
+1. **devRemotes設定を確認**: `apps/shell/project.json`に`devRemotes`が設定されていることを確認
+2. **一度停止して再起動**: 全てのサーバーを停止してから、`npx nx serve shell`を実行
+3. **ポート競合を確認**: 4200, 4201, 4202が他のプロセスで使用されていないか確認
+   ```bash
+   # macOS/Linux
+   lsof -i :4200
+   lsof -i :4201
+   lsof -i :4202
+   ```
+4. **キャッシュをクリア**: Nxのキャッシュをクリアして再実行
+   ```bash
+   npx nx reset
+   npx nx serve shell
+   ```
+
+#### ビルドエラーが発生する場合
+
+```bash
+# 依存関係を再インストール
+npm install
+
+# Nxキャッシュをリセット
+npx nx reset
+
+# 再度起動
+npx nx serve shell
+```
+
+### 🏗️ アーキテクチャ概要
+
+```
+┌─────────────────────────────────────┐
+│      Shell (Host) :4200             │
+│  ┌───────────────────────────────┐  │
+│  │  /user  → User Remote (4201)  │  │
+│  │  /product → Product Remote    │  │
+│  │             (4202)             │  │
+│  └───────────────────────────────┘  │
+└─────────────────────────────────────┘
+```
+
+### 🔍 プロジェクト確認
+
+```bash
+# 全プロジェクト一覧表示
+NX_DAEMON=false npx nx show projects
+
+# 出力例：
+# shell
+# shell-e2e
+# user
+# user-e2e
+# product
+# product-e2e
+# (その他の既存プロジェクト)
+```
+
+### 📦 作成されたファイル構造
+
+```
+apps/
+├── shell/                           # ホストアプリ
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── app.routes.ts       # リモートへのルーティング
+│   │   │   └── ...
+│   │   ├── main.ts
+│   │   └── bootstrap.ts            # Module Federation用ブートストラップ
+│   ├── module-federation.config.ts # MF設定
+│   ├── webpack.config.ts
+│   └── project.json
+│
+├── user/                            # リモートアプリ（ユーザー機能）
+│   ├── src/
+│   │   ├── app/
+│   │   │   └── remote-entry/
+│   │   │       ├── entry.routes.ts # 公開されるルート
+│   │   │       └── entry.ts
+│   │   ├── main.ts
+│   │   └── bootstrap.ts
+│   ├── module-federation.config.ts # MF設定（exposes指定）
+│   └── project.json
+│
+└── product/                         # リモートアプリ（製品機能）
+    ├── src/
+    │   ├── app/
+    │   │   └── remote-entry/
+    │   │       ├── entry.routes.ts # 公開されるルート
+    │   │       └── entry.ts
+    │   ├── main.ts
+    │   └── bootstrap.ts
+    ├── module-federation.config.ts # MF設定（exposes指定）
+    └── project.json
+```
+
+---
+
+## ✅ まとめ（更新版）
+
+これで Nx を使った
+**Angular × NestJS × Shared Library × Micro Frontend (Module Federation)** 構成が完全に稼働し、
+
+* 型の共有
+* CORS通信
+* 依存グラフ可視化
+* Jestテスト実行
+* **マイクロフロントエンドアーキテクチャ（Module Federation）**
+
+まで網羅されています 💪🔥
+
+---
