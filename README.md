@@ -1,3 +1,8 @@
+了解しました 👍
+では、これまでの構築手順＋テスト確認方法もすべて含めた **完全版README追記** を以下にまとめました👇
+
+---
+
 ## 📁 現在の理想フォルダ構成
 
 ```
@@ -12,33 +17,33 @@ my-fullstack-app/
 
 ---
 
-## ✅ ここまでの流れ（README追記用まとめ）
+## ✅ プロジェクト構築手順まとめ
 
-以下を `README.md` に追記すれば、誰でも同じ構成を再現できます👇
-
----
-
-### 📘 Nx Monorepo 環境セットアップ手順
-
-#### 1️⃣ Nxワークスペース作成（Angularを含む）
+### 1️⃣ Nxワークスペース作成（Angularを含む）
 
 ```bash
 npx create-nx-workspace@latest my-fullstack-app --preset=angular
 ```
 
-#### 2️⃣ NestJSバックエンド追加
+---
+
+### 2️⃣ NestJSバックエンド追加
 
 ```bash
 npx nx g @nx/nest:application apps/api
 ```
 
-#### 3️⃣ 共通型ライブラリの追加
+---
+
+### 3️⃣ 共通型ライブラリの追加
 
 ```bash
 npx nx g @nx/js:library libs/shared-type --importPath=@my-fullstack-app/shared-type
 ```
 
-#### 4️⃣ 共通型の定義
+---
+
+### 4️⃣ 共通型の定義
 
 `libs/shared-type/src/index.ts`
 
@@ -50,7 +55,7 @@ export interface MessageResponse {
 
 ---
 
-## 🔧 API 側設定（NestJS）
+## 🔧 API側設定（NestJS）
 
 ### 5️⃣ 型の使用
 
@@ -68,7 +73,9 @@ export class AppService {
 }
 ```
 
-### 6️⃣ CORS 設定を有効化
+---
+
+### 6️⃣ CORS設定を有効化
 
 `apps/api/src/main.ts`
 
@@ -80,7 +87,7 @@ import { AppModule } from './app/app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // 👇 Angularからの通信を許可（CORS設定）
+  // 👇 Angularからの通信を許可
   app.enableCors({
     origin: 'http://localhost:4200',
     credentials: true,
@@ -92,9 +99,7 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   await app.listen(port);
 
-  Logger.log(
-    `🚀 Application is running on: http://localhost:${port}/${globalPrefix}`
-  );
+  Logger.log(`🚀 Application is running on: http://localhost:${port}/${globalPrefix}`);
 }
 
 bootstrap();
@@ -102,9 +107,9 @@ bootstrap();
 
 ---
 
-## 💻 フロントエンド側設定（Angular）
+## 💻 フロントエンド設定（Angular）
 
-### 7️⃣ API呼び出しと型の利用
+### 7️⃣ API呼び出し
 
 `apps/my-fullstack-app/src/app/app.ts`
 
@@ -134,6 +139,8 @@ export class AppComponent implements OnInit {
 }
 ```
 
+---
+
 ### 8️⃣ テンプレート修正
 
 `apps/my-fullstack-app/src/app/app.html`
@@ -141,8 +148,6 @@ export class AppComponent implements OnInit {
 ```html
 <h1>{{ message }}</h1>
 ```
-
-（初期の `<app-nx-welcome>` を削除して置き換える）
 
 ---
 
@@ -158,11 +163,11 @@ npx nx serve my-fullstack-app
 
 ブラウザで
 👉 [http://localhost:4200](http://localhost:4200)
-を開くと、APIから返されたメッセージが `<h1>` に表示されればOK！
+を開くと、APIからのレスポンスが表示されれば成功！
 
 ---
 
-## 🧩 プロジェクト一覧の確認
+## 🧩 プロジェクト一覧確認
 
 ```bash
 npx nx show projects
@@ -180,28 +185,63 @@ shared-type
 
 ---
 
-## 🕸 依存関係グラフの可視化（Dependency Graph）
+## 🕸 依存関係グラフの可視化
 
 ```bash
 npx nx graph
 ```
 
-これでブラウザが自動で開き、
-`apps/my-fullstack-app → libs/shared-type → apps/api`
-という依存関係がグラフィカルに確認できます 🎨
+ブラウザが自動で開き、
+`my-fullstack-app → shared-type → api`
+の依存関係をグラフィカルに確認できます 🎨
 
-> 💡 手動で開く場合は：
->
-> ```bash
-> npx nx graph --open=false
-> ```
->
-> として、出力されたURLをブラウザに貼り付け。
+---
+
+## 🧪 テスト動作確認
+
+### 各プロジェクトのテスト実行
+
+```bash
+# フロントエンド（Angular）
+npx nx test my-fullstack-app
+
+# バックエンド（NestJS）
+npx nx test api
+
+# 共通型ライブラリ
+npx nx test shared-type
+```
+
+### すべてのテストを一括実行
+
+```bash
+npx nx run-many --target=test --all
+```
+
+### カバレッジ出力
+
+```bash
+npx nx test api --code-coverage
+```
+
+ブラウザで `coverage/apps/api/index.html` を開くと可視化できます。
+
+### Watchモード
+
+```bash
+npx nx test shared-type --watch
+```
 
 ---
 
 ## ✅ まとめ
 
-これで Nx を使った **Angular × NestJS × Shared Library** の構成が完成です 🎯
-CORS 対応済みなので、フロントから API を安全に呼び出せます。
+これで Nx を使った
+**Angular × NestJS × Shared Library** 構成が完全に稼働し、
 
+* 型の共有
+* CORS通信
+* 依存グラフ可視化
+* Jestテスト実行
+
+まで網羅されています 💪🔥

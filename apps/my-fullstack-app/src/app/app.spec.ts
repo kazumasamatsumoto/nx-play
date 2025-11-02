@@ -1,20 +1,31 @@
 import { TestBed } from '@angular/core/testing';
-import { App } from './app';
-import { NxWelcome } from './nx-welcome';
+import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { AppComponent } from './app';
 
-describe('App', () => {
+describe('AppComponent', () => {
+  let httpTestingController: HttpTestingController;
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [App, NxWelcome],
+      imports: [AppComponent, HttpClientTestingModule],
     }).compileComponents();
+
+    httpTestingController = TestBed.inject(HttpTestingController);
   });
 
-  it('should render title', () => {
-    const fixture = TestBed.createComponent(App);
+  afterEach(() => {
+    httpTestingController.verify();
+  });
+
+  it('should render the API response', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+
+    const req = httpTestingController.expectOne('http://localhost:3000/api');
+    req.flush({ message: 'Hello from API ✅' });
+
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain(
-      'Welcome my-fullstack-app'
-    );
+    expect(compiled.querySelector('h1')?.textContent).toContain('Hello from API ✅');
   });
 });
