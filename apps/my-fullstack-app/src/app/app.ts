@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { MessageResponse } from '@my-fullstack-app/shared-type';
 import { CommonModule } from '@angular/common';
@@ -11,9 +11,8 @@ import { CommonModule } from '@angular/common';
   imports: [CommonModule],
 })
 export class AppComponent implements OnInit {
+  private http = inject(HttpClient);
   message = '';
-
-  constructor(private http: HttpClient) {}
 
   ngOnInit() {
     this.http.get<MessageResponse>('http://localhost:3000/api').subscribe({
