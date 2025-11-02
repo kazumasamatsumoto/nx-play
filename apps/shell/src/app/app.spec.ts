@@ -1,15 +1,15 @@
 import { fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { App } from './app';
-import { NxWelcome } from './nx-welcome';
+import { HomeComponent } from './home.component';
 import { Router, RouterModule } from '@angular/router';
 
 describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [
-        RouterModule.forRoot([{ path: '', component: NxWelcome }]),
+        RouterModule.forRoot([{ path: '', component: HomeComponent }]),
         App,
-        NxWelcome,
+        HomeComponent,
       ],
     }).compileComponents();
   });
@@ -26,15 +26,24 @@ describe('App', () => {
     expect(app.title).toEqual('shell');
   });
 
-  it('should render title', fakeAsync(() => {
+  it('should render navigation', () => {
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.app-title')?.textContent).toContain(
+      'Micro Frontend App'
+    );
+  });
+
+  it('should render home component on root path', fakeAsync(() => {
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
     fixture.ngZone?.run(() => router.navigate(['']));
     tick();
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain(
-      'Welcome shell'
+    expect(compiled.querySelector('.hero-title')?.textContent).toContain(
+      'マイクロフロントエンド'
     );
   }));
 });
