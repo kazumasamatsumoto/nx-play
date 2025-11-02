@@ -1,82 +1,154 @@
-# MyFullstackApp
+## 🧱 Nx フルスタックプロジェクト構築手順（Angular + Nest.js + Shared Types）
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+### 1. Nx ワークスペース作成（Angularアプリ）
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is almost ready ✨.
-
-[Learn more about this workspace setup and its capabilities](https://nx.dev/getting-started/tutorials/angular-monorepo-tutorial?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
-
-## Finish your CI setup
-
-[Click here to finish setting up your workspace!](https://cloud.nx.app/connect/xQoGgbFFFl)
-
-
-## Run tasks
-
-To run the dev server for your app, use:
-
-```sh
-npx nx serve my-fullstack-app
+```bash
+npx create-nx-workspace@latest my-fullstack-app
 ```
 
-To create a production bundle:
+質問例：
 
-```sh
-npx nx build my-fullstack-app
+```
+✔ Which stack do you want to use? · angular
+✔ Integrated monorepo, or standalone project? · integrated
+✔ Application name · my-fullstack-app
+✔ Which bundler would you like to use? · esbuild
+✔ Default stylesheet format · scss
+✔ Do you want to enable Server-Side Rendering (SSR)? · No
+✔ Which unit test runner? · jest
+✔ Test runner for e2e tests? · playwright
+✔ Which CI provider? · Do it later
 ```
 
-To see all available targets to run for a project, run:
+---
 
-```sh
-npx nx show project my-fullstack-app
+### 2. Nest.js バックエンド追加
+
+```bash
+npm install -D @nx/nest
+npx nx g @nx/nest:application my-nest-app
 ```
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+質問例：
 
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Add new projects
-
-While you could add new projects to your workspace manually, you might want to leverage [Nx plugins](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) and their [code generation](https://nx.dev/features/generate-code?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) feature.
-
-Use the plugin's generator to create new projects.
-
-To generate a new application, use:
-
-```sh
-npx nx g @nx/angular:app demo
+```
+✔ Which linter? · eslint
+✔ Which unit test runner? · jest
+✔ Where should the project be generated? · apps
 ```
 
-To generate a new library, use:
+生成後、以下のような構成になります：
 
-```sh
-npx nx g @nx/angular:lib mylib
+```
+apps/
+├─ my-fullstack-app/   ← Angularフロント
+└─ my-nest-app/        ← Nest.jsバック
 ```
 
-You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
+---
 
-[Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+### 3. 共通型定義ライブラリ追加（libs/shared-types）
 
+```bash
+npx nx g @nx/js:lib shared-types --directory=libs
+```
 
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+質問例：
 
-## Install Nx Console
+```
+✔ Which bundler? · none
+✔ Which linter? · eslint
+✔ Which unit test runner? · none
+```
 
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
+---
 
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+### 4. 型定義を追加
 
-## Useful links
+📄 `libs/shared-types/src/index.ts`
 
-Learn more:
+```typescript
+export interface MessageResponse {
+  message: string;
+}
+```
 
-- [Learn more about this workspace setup](https://nx.dev/getting-started/tutorials/angular-monorepo-tutorial?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+---
 
-And join the Nx community:
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+### 5. Nest.js 側で利用
+
+📄 `apps/my-nest-app/src/app/app.service.ts`
+
+```typescript
+import { Injectable } from '@nestjs/common';
+import { MessageResponse } from '@my-fullstack-app/shared-types';
+
+@Injectable()
+export class AppService {
+  getData(): MessageResponse {
+    return { message: 'Hello API (shared-types ✅)' };
+  }
+}
+```
+
+---
+
+### 6. Angular 側で利用
+
+📄 `apps/my-fullstack-app/src/app/app.ts`
+
+```typescript
+import { Component, OnInit } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { CommonModule } from '@angular/common';
+import { MessageResponse } from '@my-fullstack-app/shared-types';
+
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  imports: [CommonModule],
+  templateUrl: './app.html',
+})
+export class AppComponent implements OnInit {
+  message = '';
+
+  constructor(private http: HttpClient) {}
+
+  ngOnInit() {
+    this.http.get<MessageResponse>('http://localhost:3000/api').subscribe({
+      next: (res) => (this.message = res.message),
+    });
+  }
+}
+```
+
+---
+
+### 7. 動作確認
+
+```bash
+nx serve my-nest-app   # バックエンド起動（http://localhost:3000/api）
+nx serve my-fullstack-app  # フロント起動（http://localhost:4200）
+```
+
+結果：
+
+```
+{"message":"Hello API (shared-types ✅)"}
+```
+
+ブラウザで同メッセージが表示されれば成功 🎉
+
+---
+
+### ✅ フォルダ構成（最終形）
+
+```
+my-fullstack-app/
+├─ apps/
+│  ├─ my-fullstack-app/   ← Angularフロント
+│  └─ my-nest-app/        ← Nest.jsバック
+└─ libs/
+   └─ shared-types/        ← 共通型ライブラリ
+```
+
